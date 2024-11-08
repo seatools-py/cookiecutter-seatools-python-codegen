@@ -19,12 +19,12 @@ def generate_scrapy(project_dir: str, package_dir: str, override: bool = False, 
 # https://scrapyd.readthedocs.io/en/latest/deploy.html
 
 [settings]
-default = src.{name}.scrapy.settings
+default = {package_name}.scrapy.settings
 
 [deploy]
 #url = http://localhost:6800/
 project = {name}
-'''.format(name=name), override=override)
+'''.format(package_name=package_name, name=name), override=override)
 
     def gen_scrapy_dir():
         """生成scrapy目录"""
@@ -180,12 +180,12 @@ class {class_name_prefix}Pipeline:
 
 BOT_NAME = "${name}"
 
-SPIDER_MODULES = ["${name}.scrapy.spiders"]
-NEWSPIDER_MODULE = "${name}.scrapy.spiders"
+SPIDER_MODULES = ["${package_name}.scrapy.spiders"]
+NEWSPIDER_MODULE = "${package_name}.scrapy.spiders"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "${name} (+http://www.yourdomain.com)"
+#USER_AGENT = "${package_name} (+http://www.yourdomain.com)"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -216,13 +216,13 @@ ROBOTSTXT_OBEY = True
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    "${name}.scrapy.middlewares.${class_name_prefix}SpiderMiddleware": 543,
+#    "${package_name}.scrapy.middlewares.${class_name_prefix}SpiderMiddleware": 543,
 #}
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #DOWNLOADER_MIDDLEWARES = {
-#    "${name}.scrapy.middlewares.${class_name_prefix}DownloaderMiddleware": 543,
+#    "${package_name}.scrapy.middlewares.${class_name_prefix}DownloaderMiddleware": 543,
 #}
 
 # Enable or disable extensions
@@ -234,7 +234,7 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 #ITEM_PIPELINES = {
-#    "${name}.scrapy.pipelines.${class_name_prefix}Pipeline": 300,
+#    "${package_name}.scrapy.pipelines.${class_name_prefix}Pipeline": 300,
 #}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -262,7 +262,7 @@ ROBOTSTXT_OBEY = True
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
-''', name=name, class_name_prefix=class_name_prefix), override=override)
+''', name=name, class_name_prefix=class_name_prefix, package_name=package_name), override=override)
         mkdir(spiders_dir)
         create_file(spiders_init_py, '''# This package will contain the spiders of your Scrapy project
 #
