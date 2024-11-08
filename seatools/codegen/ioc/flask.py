@@ -57,7 +57,7 @@ import multiprocessing
 import click
 from loguru import logger
 from ${package_name}.config import cfg, get_config_dir
-from ${package_name}.logger import setup, setup_uvicorn, setup_logging
+from ${package_name}.logger import setup_loguru, setup_uvicorn, setup_logging
 from ${package_name} import utils
 from typing import Optional
 from seatools import ioc
