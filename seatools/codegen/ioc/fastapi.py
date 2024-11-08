@@ -103,10 +103,8 @@ def wrapper_exception_handler(app: FastAPI) -> FastAPI:
 from ${package_name}.fastapi.exception_handler import wrapper_exception_handler
 from ${package_name}.fastapi.middlewares import wrapper_log_middleware
 from seatools.models import R
-from unique_tools.env import get_env
 from ${package_name}.config import get_config_dir
 from seatools import ioc
-import os
 from seatools.env import get_env
 from ${package_name}.logger import setup_loguru, setup_logging, setup_uvicorn
 from loguru import logger
