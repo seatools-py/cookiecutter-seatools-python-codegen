@@ -1,9 +1,22 @@
 import os
+from typing import Optional
+
 from .common import mkdir, create_file, add_poetry_script, str_format, add_docker_compose_script, unwrapper_dir_name
 
 
-def generate_django(project_dir: str, package_dir: str, override: bool = False, *args, **kwargs):
-    """生成django模板代码"""
+def generate_django(project_dir: str, package_dir: str, override: bool = False,
+                    docker: Optional[bool] = False,
+                    docker_compose: Optional[bool] = False,
+                    *args, **kwargs):
+    """生成django模板代码
+
+    Args:
+        project_dir: 项目目录
+        package_dir: 包目录
+        override: 是否覆盖文件
+        docker: 是否生成docker相关文件
+        docker_compose: 是否生成docker-compose相关文件
+    """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
     name = package_dir.replace('\\', '/').strip('/').split('/')[-1]
@@ -341,8 +354,9 @@ echo "退出虚拟环境"
 deactivate
 ''', project_name=project_name), override=override)
 
-        dockerfile_file = project_dir + os.sep + 'django.Dockerfile'
-        create_file(dockerfile_file, str_format('''FROM python:3.9
+        if docker or docker_compose:
+            dockerfile_file = project_dir + os.sep + 'django.Dockerfile'
+            create_file(dockerfile_file, str_format('''FROM python:3.9
 
 WORKDIR /app
 
@@ -363,7 +377,9 @@ RUN poetry add django==4.2.11
 
 CMD ["poetry", "run", "django", "--env", "pro", "--django_args", "runserver 0.0.0.0:8000"]
 ''', project_name=project_name), override=override)
-        add_docker_compose_script(project_dir, str_format('''  django:
+
+        if docker_compose:
+            add_docker_compose_script(project_dir, str_format('''  django:
     container_name: ${project_name}_django
     build:
       context: .

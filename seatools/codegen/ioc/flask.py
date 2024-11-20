@@ -1,9 +1,22 @@
 import os
+from typing import Optional
+
 from .common import mkdir, create_file, add_poetry_script, add_docker_compose_script, unwrapper_dir_name, str_format
 
 
-def generate_flask(project_dir: str, package_dir: str, override: bool = False, *args, **kwargs):
-    """生成flask模板代码"""
+def generate_flask(project_dir: str, package_dir: str, override: bool = False,
+                   docker: Optional[bool] = False,
+                   docker_compose: Optional[bool] = False,
+                   *args, **kwargs):
+    """生成flask模板代码
+
+    Args:
+        project_dir: 项目目录
+        package_dir: 包目录
+        override: 是否覆盖文件
+        docker: 是否生成docker相关文件
+        docker_compose: 是否生成docker-compose相关文件
+    """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
 
@@ -173,8 +186,10 @@ echo "执行成功"
 echo "退出虚拟环境"
 deactivate
 ''', project_name=project_name))
-        dockerfile_path = project_dir + os.sep + 'flask.Dockerfile'
-        create_file(dockerfile_path, '''FROM python:3.9
+
+        if docker or docker_compose:
+            dockerfile_path = project_dir + os.sep + 'flask.Dockerfile'
+            create_file(dockerfile_path, '''FROM python:3.9
 
 WORKDIR /app
 
@@ -195,7 +210,9 @@ RUN poetry add flask uvicorn[standard]
 
 CMD ["poetry", "run", "flask", "--env", "pro", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 ''', override=override)
-        add_docker_compose_script(project_dir, str_format('''  flask:
+
+        if docker_compose:
+            add_docker_compose_script(project_dir, str_format('''  flask:
     container_name: ${project_name}_flask
     build:
       context: .

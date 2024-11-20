@@ -1,10 +1,18 @@
 import os
+from typing import Optional
+
 from .common import mkdir, create_file, add_poetry_script, extract_names, str_format, unwrapper_dir_name
 from .cmd import generate_cmd
 
 
 def generate_scrapy(project_dir: str, package_dir: str, override: bool = False, *args, **kwargs):
-    """生成scrapy模板代码"""
+    """生成scrapy模板代码
+
+    Args:
+        project_dir: 项目目录
+        package_dir: 包目录
+        override: 是否覆盖文件
+    """
     # scrapy项目名称
     name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
@@ -311,8 +319,21 @@ if __name__ == "__main__":
 
 
 def generate_scrapy_spider(project_dir: str, package_dir: str,
-                           name: str, domain: str, override: bool = False, *args, **kwargs):
-    """生成scrapy爬虫"""
+                           name: str, domain: str, override: bool = False,
+                           docker: Optional[bool] = True,
+                           docker_compose: Optional[bool] = True,
+                           *args, **kwargs):
+    """生成scrapy爬虫
+
+    Args:
+        project_dir: 项目目录
+        package_dir: 包目录
+        name: 爬虫名称
+        domain: 爬虫目标站点域名
+        override: 是否覆盖代码
+        docker: 是否生成docker相关文件
+        docker_compose: 是否生成docker-compose相关文件
+    """
     package_name = unwrapper_dir_name(package_dir)
 
     scrapy_dir = package_dir + os.sep + 'scrapy'
@@ -353,4 +374,6 @@ class ${class_name}Spider(scrapy.Spider):
     generate_cmd(project_dir, package_dir, override=override,
                  command=spider_name,
                  extra_import="from scrapy.cmdline import execute\n",
-                 extra_run=str_format("execute(['scrapy', 'crawl', '${name}', '-a', 'seatools_file_name={}'.format(file_name), '-a', 'seatools_log_level={}'.format(log_level)])", name=spider_name))
+                 extra_run=str_format("execute(['scrapy', 'crawl', '${name}', '-a', 'seatools_file_name={}'.format(file_name), '-a', 'seatools_log_level={}'.format(log_level)])", name=spider_name),
+                 docker=docker,
+                 docker_compose=docker_compose)

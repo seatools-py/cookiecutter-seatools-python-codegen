@@ -10,8 +10,22 @@ def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
                  label: Optional[str] = None,
                  extra_import: Optional[str] = '',
                  extra_run: Optional[str] = '',
+                 docker: Optional[bool] = True,
+                 docker_compose: Optional[bool] = True,
                  **kwargs):
-    """生成poetry cmd命令"""
+    """生成poetry cmd命令
+
+    Args:
+        project_dir: 项目目录
+        package_dir: 包目录
+        override: 是否覆盖文件
+        command: 命令名称, 生成的cmd命令可使用 poetry run {command} 运行
+        label: 生成的cmd的日志label
+        extra_import: 生成的cmd需要额外执行的导入
+        extra_run: 生成的cmd需要额外执行的逻辑
+        docker: 是否生成docker相关文件
+        docker_compose: 是否生成docker-compose相关文件
+    """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
     label = label or command
@@ -134,8 +148,9 @@ echo "退出虚拟环境"
 deactivate
 ''', project_name=project_name, command=command), override=override)
 
-    dockerfile_file = project_dir + os.sep + cmd_name + '.Dockerfile'
-    create_file(dockerfile_file, str_format('''FROM python:3.9
+    if docker or docker_compose:
+        dockerfile_file = project_dir + os.sep + cmd_name + '.Dockerfile'
+        create_file(dockerfile_file, str_format('''FROM python:3.9
 
 WORKDIR /app
 
@@ -154,7 +169,9 @@ RUN poetry install --only main
 
 CMD poetry run ${command} --env pro
 ''', command=command), override=override)
-    add_docker_compose_script(project_dir, str_format('''  ${cmd_name}:
+
+    if docker_compose:
+        add_docker_compose_script(project_dir, str_format('''  ${cmd_name}:
     container_name: ${project_name}_${cmd_name}
     build:
       context: .
