@@ -24,7 +24,7 @@ def find_package_dir(project_dir: str) -> Optional[str]:
     import toml
     with open(project_dir + os.sep + 'pyproject.toml', 'r') as f:
         config = toml.load(f)
-    package_name = config['tool.coverage.run']['source'][0]
+    package_name = config['tool']['coverage']['run']['source'][0]
     package_dir = project_dir + os.sep + 'src' + os.sep + package_name
     if os.path.exists(package_dir):
         return package_dir

@@ -40,7 +40,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://gitee.com/dragons96/cookiecutter-seatools-python-codegen',
-    version='1.0.3',
+    version='1.0.4',
     zip_safe=False,
     entry_points={
         'console_scripts': [
