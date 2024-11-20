@@ -22,7 +22,7 @@ def find_package_dir(project_dir: str) -> Optional[str]:
     """查询项目的包路径, 若找不到则返回None."""
     assert project_dir, '项目路径无法识别'
     import toml
-    with open(project_dir + os.sep + 'pyproject.toml', 'r') as f:
+    with open(project_dir + os.sep + 'pyproject.toml', 'r', encoding='utf-8') as f:
         config = toml.load(f)
     package_name = config['tool']['coverage']['run']['source'][0]
     package_dir = project_dir + os.sep + 'src' + os.sep + package_name
