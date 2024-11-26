@@ -353,7 +353,9 @@ def generate_scrapy_spider(project_dir: str, package_dir: str,
 
 import scrapy
 from scrapy.http.response import Response
-from ${package_name}.logger import setup_logging
+from ${package_name} import utils
+from ${package_name}.config import cfg
+from seatools.logger.setup import setup_logging
 
 
 class ${class_name}Spider(scrapy.Spider):
@@ -364,8 +366,8 @@ class ${class_name}Spider(scrapy.Spider):
     def __init__(self, seatools_file_name=None, seatools_log_level='INFO', **kwargs: Any):
         super().__init__(**kwargs)
         if seatools_file_name:
-            setup_logging('{}.scrapy.log'.format(seatools_file_name), 'scrapy', level=seatools_log_level, label='${name}')
-            setup_logging('{}.scrapy.{}.log'.format(seatools_file_name, self.name), self.name, level=seatools_log_level, label='${name}')
+            setup_logging(utils.get_log_path('{}.scrapy.log'.format(seatools_file_name)), 'scrapy', level=seatools_log_level, extra={'project': cfg().project_name, 'label': '${name}'})
+            setup_logging(utils.get_log_path('{}.scrapy.{}.log'.format(seatools_file_name, self.name)), self.name, level=seatools_log_level, extra={'project': cfg().project_name, 'label': '${name}'})
 
     def parse(self, response: Response, **kwargs: Any) -> Any:
         pass
