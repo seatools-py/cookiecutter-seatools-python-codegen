@@ -79,7 +79,7 @@ def main(project_dir: Optional[str] = None,
     # 设置日志文件
     file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
     setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': label})
-    setup_logging('{}.sqlalchemy.log'.format(file_name), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': label})
+    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': label})
     logger.info('运行成功, 当前项目: {}', cfg().project_name)
     ${extra_run}
 
