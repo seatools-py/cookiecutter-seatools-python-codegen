@@ -26,49 +26,8 @@ def generate_fastapi(project_dir: str, package_dir: str, override: bool = False,
         fastapi_init_py = fastapi_dir + os.sep + '__init__.py'
         fastapi_app_py = fastapi_dir + os.sep + 'app.py'
         fastapi_exception_handler_py = fastapi_dir + os.sep + 'exception_handler.py'
-        fastapi_middlewares_py = fastapi_dir + os.sep + 'middlewares.py'
         mkdir(fastapi_dir)
         create_file(fastapi_init_py, override=override)
-        create_file(fastapi_middlewares_py, '''from fastapi import FastAPI, Request, Response
-from starlette.concurrency import iterate_in_threadpool
-from loguru import logger
-import time
-
-
-def wrapper_log_middleware(app: FastAPI) -> FastAPI:
-    @app.middleware('http')
-    async def log_record(request: Request, call_next):
-        """记录请求"""
-        # todo: 待实现
-        start_time = time.time()
-        try:
-            body = await request.body()
-            if body:
-                body = body.decode('utf-8')
-            response: Response = await call_next(request)
-            if hasattr(response, 'body_iterator'):
-                # 如果是流式响应，读取内容
-                data_list = []
-                async for data in response.body_iterator:
-                    data_list.append(data)
-                response_data = b''.join(data_list).decode('utf-8')
-                # 重置body_iterator
-                response.body_iterator = iterate_in_threadpool(iter(data_list))
-            else:
-                response_data = await response.body()
-            logger.info("请求路径[{}]请求方法[{}]耗时[{}]请求头[{}]请求参数[{}]请求体[{}]响应头[{}]响应体[{}]",
-                        request.url.path, request.method, int(time.time() - start_time), dict(request.headers),
-                        request.query_params, body,
-                        dict(response.headers), response_data)
-            return response
-        except Exception as e:
-            logger.exception("请求路径[{}]请求方法[{}]耗时[{}]请求头[{}]请求参数[{}]请求体[{}]异常, 异常信息: {}",
-                             request.url.path, request.method, int(time.time() - start_time), dict(request.headers),
-                             request.query_params,
-                             str(request.body()), e)
-            raise e
-    return app
-''', override=override)
         create_file(fastapi_exception_handler_py, '''from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.exceptions import RequestValidationError, HTTPException
@@ -114,25 +73,21 @@ def wrapper_exception_handler(app: FastAPI) -> FastAPI:
 ''', override=override)
         create_file(fastapi_app_py, str_format("""from fastapi import FastAPI
 from ${package_name}.fastapi.exception_handler import wrapper_exception_handler
-from ${package_name}.fastapi.middlewares import wrapper_log_middleware
 from seatools.models import R
-from ${package_name}.config import get_config_dir
-from seatools import ioc
+from ${package_name}.config import cfg
+from ${package_name}.boot import start
+from ${package_name} import utils
 from seatools.env import get_env
-from ${package_name}.logger import setup_loguru, setup_logging, setup_uvicorn
+from seatools.logger.setup import setup_loguru, setup_logging, setup_uvicorn
 from loguru import logger
 
-# 运行ioc
-ioc.run(scan_package_names='${package_name}',
-        config_dir=get_config_dir(),
-        # 过滤扫描的模块
-        exclude_modules=[],
-        )
+# 启动项目依赖
+start()
 
 # 设置日志文件
-setup_loguru('${project_name}.log', label='fastapi')
-setup_logging('${project_name}.sqlalchemy.log', 'sqlalchemy', label='fastapi')
-setup_uvicorn('${project_name}.uvicorn.log', label='fastapi')
+setup_loguru(utils.get_log_path('${project_name}.log'), extra={'project': cfg().project_name, 'label': 'fastapi'})
+setup_logging(utils.get_log_path('${project_name}.sqlalchemy.log'), 'sqlalchemy', extra={'project': cfg().project_name, 'label': 'fastapi'})
+setup_uvicorn(utils.get_log_path('${project_name}.uvicorn.log'), extra={'project': cfg().project_name, 'label': 'fastapi'})
 app = FastAPI(
     title='${project_name}',
     version='1.0',
@@ -149,8 +104,6 @@ def hello():
 
 # 异常处理
 app = wrapper_exception_handler(app)
-# 日志记录
-app = wrapper_log_middleware(app)
 """, package_name=package_name, project_name=project_name), override=override)
         routers_dir = fastapi_dir + os.sep + 'routers'
         router_init_py = routers_dir + os.sep + '__init__.py'
@@ -166,12 +119,12 @@ import sys
 import multiprocessing
 import click
 from loguru import logger
-from ${package_name}.config import cfg, get_config_dir
-from ${package_name}.logger import setup_loguru, setup_uvicorn, setup_logging
+from ${package_name}.config import cfg
+from seatools.logger.setup import setup_loguru, setup_uvicorn, setup_logging
 from ${package_name} import utils
 from seatools.env import get_env
 from typing import Optional
-from seatools import ioc
+from ${package_name}.boot import start
 import uvicorn
 
 
@@ -203,16 +156,14 @@ def main(project_dir: Optional[str] = None,
         os.environ['ENV'] = env
     if reload is None:
         reload = get_env().is_dev()
-    # 运行ioc
-    ioc.run(scan_package_names='${package_name}',
-            config_dir=get_config_dir(),
-            # db 模块依赖 sqlalchemy, 过滤扫描防止未使用 db 场景报错
-            exclude_modules=[],
-            )
+
+    # 启动项目依赖
+    start()
+
     file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
-    setup_loguru('{}.log'.format(file_name), level=log_level, label='fastapi')
-    setup_logging('{}.sqlalchemy.log'.format(file_name), 'sqlalchemy', level=log_level, label='fastapi')
-    setup_uvicorn('{}.uvicorn.log'.format(file_name), level=log_level, label='fastapi')
+    setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'fastapi'})
+    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': 'fastapi'})
+    setup_uvicorn(utils.get_log_path('{}.uvicorn.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'fastapi'})
     logger.info('运行成功, 当前项目: {}', cfg().project_name)
     uvicorn.run('${package_name}.fastapi.app:app', host=host, port=port, workers=workers, reload=reload)
 

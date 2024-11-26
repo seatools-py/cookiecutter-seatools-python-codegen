@@ -241,14 +241,46 @@ if __name__ == '__main__':
         """生成django cmd命令行工具"""
         cmd_dir = package_dir + os.sep + 'cmd'
         django_cmd_main_py = cmd_dir + os.sep + 'django_main.py'
+        django_cmd_py = cmd_dir + os.sep + 'django_cmd.py'
+        create_file(django_cmd_py, str_format('''import sys
+
+import click
+
+from ${package_name}.boot import start
+from ${package_name}.django.manage import run
+
+
+@click.command(context_settings={'ignore_unknown_options': True}, add_help_option=False)
+@click.argument('args', nargs=-1)
+def main(args = None) -> None:
+    """Django cmd, equals manage.py.
+
+    Usage:
+        poetry run django [runserver|migrate|...]
+    """
+    # 启动项目依赖
+    start()
+    # django 基于sys.argv[0]处理, 这里覆盖sys.argv[0]为当前文件来保证poetry正常运行
+    sys.argv[0] = __file__
+    django_args_list = [sys.argv[0], *args]
+    run(django_args_list)
+
+
+if __name__ == "__main__":
+    main()
+''', package_name=package_name), override=override)
+        add_poetry_script(project_dir, str_format('django = "${package_name}.cmd.django_cmd:main"',
+                                                  package_name=package_name))
         create_file(django_cmd_main_py, str_format('''import os
 import sys
 import click
+from ${package_name} import utils
+import uvicorn
 from loguru import logger
-from ${package_name}.logger import setup_loguru, setup_logging
-from ${package_name}.config import cfg, get_config_dir
+from seatools.logger.setup import setup_loguru, setup_logging
+from ${package_name}.config import cfg
 from typing import Optional
-from seatools import ioc
+from ${package_name}.boot import start
 from ${package_name}.django.manage import run
 
 
@@ -257,43 +289,44 @@ from ${package_name}.django.manage import run
 @click.option('--env', default='dev', help='运行环境, dev=测试环境, test=测试环境, pro=正式环境, 默认: dev')
 @click.option('--log_level', default='INFO',
               help='日志级别, DEBUG=调试, INFO=信息, WARNING=警告, ERROR=错误, CRITICAL=严重, 默认: INFO')
-@click.option('--django_args', default='', help='django 运行参数, 例如启动web服务: runserver, 默认空')
+@click.option('-h', '--host', default='127.0.0.1', help='服务允许访问的ip, 若允许所有ip访问可设置0.0.0.0')
+@click.option('-p', '--port', default=8000, help='服务端口')
+@click.option('-w', '--workers', default=1, help='工作进程数')
+@click.option('--reload', default=None, help='是否热重启服务器, 默认情况下dev环境开始热重启, test与pro环境不热重启, true: 开启, false: 不开启')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
 def main(project_dir: Optional[str] = None,
+         host: Optional[str] = '127.0.0.1',
+         port: Optional[int] = 8000,
+         workers: Optional[int] = 1,
          env: Optional[str] = 'dev',
-         log_level: Optional[str] = 'INFO',
-         django_args: Optional[str] = '') -> None:
+         reload: Optional[bool] = None,
+         log_level: Optional[str] = 'INFO') -> None:
     """Django cmd."""
+    if utils.is_pyinstaller_env():
+        os.environ['PROJECT_DIR'] = os.path.dirname(sys.executable)
     if project_dir:
         os.environ['PROJECT_DIR'] = project_dir
     if env:
         os.environ['ENV'] = env
-    # 运行ioc
-    ioc.run(scan_package_names='${package_name}',
-            config_dir=get_config_dir(),
-            # 过滤扫描的模块
-            exclude_modules=[],
-            )
+
+    # 启动项目依赖
+    start()
+
     file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
-    setup_loguru('{}.log'.format(file_name), level=log_level, label='django')
-    setup_logging('{}.sqlalchemy.log'.format(file_name), 'sqlalchemy', level=log_level, label='django')
-    setup_logging('{}.django.log'.format(file_name), 'django', level=log_level, label='django')
+    setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'django'})
+    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': 'django'})
+    setup_logging(utils.get_log_path('{}.django.log'.format(file_name)), 'django', level=log_level, extra={'project': cfg().project_name, 'label': 'django'})
     logger.info('运行成功, 当前项目: {}', cfg().project_name)
     # 启动django
-    django_args_list = [item.strip() for item in django_args.split(' ') if item.strip()]
-    # django 基于sys.argv[0]处理, 这里覆盖sys.argv[0]为当前文件来保证poetry正常运行
-    sys.argv[0] = __file__
-    django_args_list = [sys.argv[0], *django_args_list]
-    logger.info('[django]启动参数: {}', django_args_list)
-    run(django_args_list)
+    uvicorn.run('${package_name}.django.asgi:application', host=host, port=port, workers=workers, reload=reload)
 
 
 if __name__ == "__main__":
     main()
 ''', package_name=package_name), override=override)
         add_poetry_script(project_dir, str_format(
-            'django = "${package_name}.cmd.django_main:main"',
+            'django_runserver = "${package_name}.cmd.django_main:main"',
             package_name=package_name,
         ))
 
@@ -348,7 +381,7 @@ fi
 # 执行命令
 echo "开始执行命令"
 # 执行命令
-nohup poetry run django --django_args "runserver 0.0.0.0:8000" --env pro >> /dev/null 2>&1 &
+nohup poetry run django_runserver --host 0.0.0.0 --port 8000 --env pro --workers 2 >> /dev/null 2>&1 &
 echo "执行成功"
 echo "退出虚拟环境"
 deactivate
@@ -373,9 +406,9 @@ RUN poetry lock
 
 RUN poetry install --only main
 
-RUN poetry add django==4.2.11
+RUN poetry add django
 
-CMD ["poetry", "run", "django", "--env", "pro", "--django_args", "runserver 0.0.0.0:8000"]
+CMD poetry run django_runserver --host 0.0.0.0 --port 8000 --env pro --workers 2
 ''', project_name=project_name), override=override)
 
         if docker_compose:

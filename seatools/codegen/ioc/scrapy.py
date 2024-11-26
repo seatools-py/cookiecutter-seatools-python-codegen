@@ -290,7 +290,7 @@ from seatools import ioc
 from scrapy.cmdline import execute
 
 
-@click.command(context_settings={'ignore_unknown_options': True})
+@click.command(context_settings={'ignore_unknown_options': True}, add_help_option=False)
 @click.argument('args', nargs=-1)
 def main(args = None) -> None:
     """Demo Scrapy cmd."""

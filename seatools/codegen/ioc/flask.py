@@ -30,23 +30,20 @@ def generate_flask(project_dir: str, package_dir: str, override: bool = False,
         create_file(flask_app_py, str_format('''from flask import Flask
 from seatools.models import R
 from uvicorn.middleware.wsgi import WSGIMiddleware
-from ${package_name}.config import get_config_dir
-from seatools import ioc
+from ${package_name}.config import cfg
+from ${package_name} import utils
+from ${package_name}.boot import start
 import os
-from ${package_name}.logger import setup_loguru, setup_uvicorn, setup_logging
+from seatools.logger.setup import setup_loguru, setup_uvicorn, setup_logging
 from loguru import logger
 
-# 运行ioc
-ioc.run(scan_package_names='${package_name}',
-        config_dir=get_config_dir(),
-        # 过滤扫描的模块
-        exclude_modules=[],
-        )
+# 启动项目依赖
+start()
 
 # 设置日志文件
-setup_loguru('${project_name}.log', label='flask')
-setup_logging('${project_name}.sqlalchemy.log', 'sqlalchemy', label='flask')
-setup_uvicorn('${project_name}.uvicorn.log', label='flask')
+setup_loguru(utils.get_log_path('${project_name}.log'), extra={'project': cfg().project_name, 'label': 'flask'})
+setup_logging(utils.get_log_path('${project_name}.sqlalchemy.log'), 'sqlalchemy', extra={'project': cfg().project_name, 'label': 'flask'})
+setup_uvicorn(utils.get_log_path('${project_name}.uvicorn.log'), extra={'project': cfg().project_name, 'label': 'flask'})
 app = Flask(__name__)
 
 
@@ -69,11 +66,11 @@ import sys
 import multiprocessing
 import click
 from loguru import logger
-from ${package_name}.config import cfg, get_config_dir
-from ${package_name}.logger import setup_loguru, setup_uvicorn, setup_logging
+from ${package_name}.config import cfg
+from seatools.logger.setup import setup_loguru, setup_uvicorn, setup_logging
 from ${package_name} import utils
 from typing import Optional
-from seatools import ioc
+from ${package_name}.boot import start
 from seatools.env import get_env
 import uvicorn
 
@@ -106,16 +103,14 @@ def main(project_dir: Optional[str] = None,
         os.environ['ENV'] = env
     if reload is None:
         reload = get_env().is_dev()
-    # 运行ioc
-    ioc.run(scan_package_names='${package_name}',
-            config_dir=get_config_dir(),
-            # 过滤扫描的模块
-            exclude_modules=[],
-            )
+
+    # 启动项目依赖
+    start()
+
     file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
-    setup_loguru('{}.log'.format(file_name), level=log_level, label='flask')
-    setup_logging('{}.sqlalchemy.log'.format(file_name), 'sqlalchemy', level=log_level, label='flask')
-    setup_uvicorn('{}.uvicorn.log'.format(file_name), level=log_level, label='flask')
+    setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'flask'})
+    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': 'flask'})
+    setup_uvicorn(utils.get_log_path('{}.uvicorn.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'flask'})
     logger.info('运行成功, 当前项目: {}', cfg().project_name)
     uvicorn.run('${package_name}.flask.app:asgi_app', host=host, port=port, workers=workers, reload=reload)
 
