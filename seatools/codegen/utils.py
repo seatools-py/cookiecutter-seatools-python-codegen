@@ -3,8 +3,8 @@ from typing import Optional
 
 
 def _dfs_find_project_dir(place: str):
-    pyproject_toml = place + os.sep + 'pyproject.toml'
-    if os.path.exists(pyproject_toml):
+    check_files = [place + os.sep + 'pyproject.toml', place + os.sep + 'requirements.txt']
+    if any([file for file in check_files if os.path.exists(file)]):
         return place
     parent = os.path.dirname(place)
     if place == parent:
