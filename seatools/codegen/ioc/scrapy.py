@@ -284,24 +284,20 @@ FEED_EXPORT_ENCODING = "utf-8"
         create_file(scrapy_cmd_py, str_format('''import os
 import sys
 import click
-from ${package_name}.config import get_config_dir
-from ${package_name} import utils
 from seatools import ioc
 from scrapy.cmdline import execute
+
+from ${package_name}.boot import start
 
 
 @click.command(context_settings={'ignore_unknown_options': True}, add_help_option=False)
 @click.argument('args', nargs=-1)
 def main(args = None) -> None:
     """Demo Scrapy cmd."""
-    # 如果是pyinstaller环境, 默认把当前路径设置为执行路径
-    if utils.is_pyinstaller_env():
-        os.environ['PROJECT_DIR'] = os.path.dirname(sys.executable)
-    # 运行ioc
-    ioc.run(scan_package_names='demo_scrapy',
-            config_dir=get_config_dir(),
-            exclude_modules=[],
-            )
+    # start ioc
+    start()
+
+    # run scrapy cmd
     execute(['scrapy', *args])
 
 
