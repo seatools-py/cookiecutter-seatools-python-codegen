@@ -281,10 +281,7 @@ FEED_EXPORT_ENCODING = "utf-8"
     def gen_scrapy_cmd():
         cmd_dir = package_dir + os.sep + 'cmd'
         scrapy_cmd_py = cmd_dir + os.sep + 'scrapy_cmd.py'
-        create_file(scrapy_cmd_py, str_format('''import os
-import sys
-import click
-from seatools import ioc
+        create_file(scrapy_cmd_py, str_format('''import click
 from scrapy.cmdline import execute
 
 from ${package_name}.boot import start
