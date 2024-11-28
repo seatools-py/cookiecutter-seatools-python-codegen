@@ -30,26 +30,17 @@ def generate_flask(project_dir: str, package_dir: str, override: bool = False,
         create_file(flask_app_py, str_format('''from flask import Flask
 from seatools.models import R
 from uvicorn.middleware.wsgi import WSGIMiddleware
-from ${package_name}.config import cfg
-from ${package_name} import utils
+
 from ${package_name}.boot import start
-import os
-from seatools.logger.setup import setup_loguru, setup_uvicorn, setup_logging
-from loguru import logger
 
 # 启动项目依赖
 start()
 
-# 设置日志文件
-setup_loguru(utils.get_log_path('${project_name}.log'), extra={'project': cfg().project_name, 'label': 'flask'})
-setup_logging(utils.get_log_path('${project_name}.sqlalchemy.log'), 'sqlalchemy', extra={'project': cfg().project_name, 'label': 'flask'})
-setup_uvicorn(utils.get_log_path('${project_name}.uvicorn.log'), extra={'project': cfg().project_name, 'label': 'flask'})
 app = Flask(__name__)
 
 
 @app.get('/')
 def hello():
-    logger.info('Hello ${project_name} by Flask!')
     return R.ok(data='Hello ${project_name} by Flask!').model_dump()
 
 
@@ -62,24 +53,17 @@ asgi_app = WSGIMiddleware(app)
         cmd_dir = package_dir + os.sep + 'cmd'
         flask_cmd_main_py = cmd_dir + os.sep + 'flask_main.py'
         create_file(flask_cmd_main_py, str_format('''import os
-import sys
 import multiprocessing
 import click
-from loguru import logger
-from ${package_name}.config import cfg
-from seatools.logger.setup import setup_loguru, setup_uvicorn, setup_logging
-from ${package_name} import utils
-from typing import Optional
-from ${package_name}.boot import start
-from seatools.env import get_env
 import uvicorn
+from typing import Optional
+
+from ${package_name}.boot import start
 
 
 @click.command()
 @click.option('--project_dir', default=None, help='项目目录, 未打包无需传该参数, 自动基于项目树检索')
 @click.option('--env', default='dev', help='运行环境, dev=测试环境, test=测试环境, pro=正式环境, 默认: dev')
-@click.option('--log_level', default='INFO',
-              help='日志级别, DEBUG=调试, INFO=信息, WARNING=警告, ERROR=错误, CRITICAL=严重, 默认: INFO')
 @click.option('--host', default='127.0.0.1', help='服务允许访问的ip, 若允许所有ip访问可设置0.0.0.0')
 @click.option('--port', default=8000, help='服务端口')
 @click.option('--workers', default=1, help='工作进程数')
@@ -88,30 +72,20 @@ import uvicorn
 @click.help_option('-h', '--help', help='查看命令帮助')
 def main(project_dir: Optional[str] = None,
          env: Optional[str] = 'dev',
-         log_level: Optional[str] = 'INFO',
          host: Optional[str] = '127.0.0.1',
          port: Optional[int] = 8000,
          workers: Optional[int] = 1,
          reload: Optional[bool] = None) -> None:
     """Flask cmd."""
-    # 如果是pyinstaller环境, 先把当前路径设置为执行路径, 以便于无参运行
-    if utils.is_pyinstaller_env():
-        os.environ['PROJECT_DIR'] = os.path.dirname(sys.executable)
     if project_dir:
         os.environ['PROJECT_DIR'] = project_dir
     if env:
         os.environ['ENV'] = env
-    if reload is None:
-        reload = get_env().is_dev()
 
-    # 启动项目依赖
+    # start ioc
     start()
 
-    file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
-    setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'flask'})
-    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': 'flask'})
-    setup_uvicorn(utils.get_log_path('{}.uvicorn.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'flask'})
-    logger.info('运行成功, 当前项目: {}', cfg().project_name)
+    # start uvicorn
     uvicorn.run('${package_name}.flask.app:asgi_app', host=host, port=port, workers=workers, reload=reload)
 
 

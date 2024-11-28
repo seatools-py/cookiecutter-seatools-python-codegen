@@ -272,23 +272,17 @@ if __name__ == "__main__":
         add_poetry_script(project_dir, str_format('django = "${package_name}.cmd.django_cmd:main"',
                                                   package_name=package_name))
         create_file(django_cmd_main_py, str_format('''import os
-import sys
 import click
-from ${package_name} import utils
 import uvicorn
-from loguru import logger
-from seatools.logger.setup import setup_loguru, setup_logging
-from ${package_name}.config import cfg
+import multiprocessing
 from typing import Optional
+
 from ${package_name}.boot import start
-from ${package_name}.django.manage import run
 
 
 @click.command()
 @click.option('--project_dir', default=None, help='项目目录, 未打包无需传该参数, 自动基于项目树检索')
 @click.option('--env', default='dev', help='运行环境, dev=测试环境, test=测试环境, pro=正式环境, 默认: dev')
-@click.option('--log_level', default='INFO',
-              help='日志级别, DEBUG=调试, INFO=信息, WARNING=警告, ERROR=错误, CRITICAL=严重, 默认: INFO')
 @click.option('-h', '--host', default='127.0.0.1', help='服务允许访问的ip, 若允许所有ip访问可设置0.0.0.0')
 @click.option('-p', '--port', default=8000, help='服务端口')
 @click.option('-w', '--workers', default=1, help='工作进程数')
@@ -300,29 +294,23 @@ def main(project_dir: Optional[str] = None,
          port: Optional[int] = 8000,
          workers: Optional[int] = 1,
          env: Optional[str] = 'dev',
-         reload: Optional[bool] = None,
-         log_level: Optional[str] = 'INFO') -> None:
+         reload: Optional[bool] = None) -> None:
     """Django cmd."""
-    if utils.is_pyinstaller_env():
-        os.environ['PROJECT_DIR'] = os.path.dirname(sys.executable)
     if project_dir:
         os.environ['PROJECT_DIR'] = project_dir
     if env:
         os.environ['ENV'] = env
 
-    # 启动项目依赖
+    # start ioc
     start()
 
-    file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
-    setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': 'django'})
-    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': 'django'})
-    setup_logging(utils.get_log_path('{}.django.log'.format(file_name)), 'django', level=log_level, extra={'project': cfg().project_name, 'label': 'django'})
-    logger.info('运行成功, 当前项目: {}', cfg().project_name)
-    # 启动django
+    # start django server
     uvicorn.run('${package_name}.django.asgi:application', host=host, port=port, workers=workers, reload=reload)
 
 
 if __name__ == "__main__":
+    # windows 多进程需要执行该方法, linux 与 mac 执行无效不影响
+    multiprocessing.freeze_support()
     main()
 ''', package_name=package_name), override=override)
         add_poetry_script(project_dir, str_format(

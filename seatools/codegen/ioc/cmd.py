@@ -40,47 +40,28 @@ def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
     cmd_main_name = '_'.join(names)
     cmd_py = cmd_dir + os.sep + cmd_main_name + '.py'
     create_file(cmd_py, str_format('''import os
-import sys
 import click
-from loguru import logger
-from ${package_name}.config import cfg
-from seatools.logger.setup import setup_loguru, setup_logging
-from ${package_name} import utils
-from ${package_name}.boot import start
 from typing import Optional
+
+from ${package_name}.boot import start
 ${extra_import}
 
 @click.command()
 @click.option('--project_dir', default=None, help='项目目录, 未打包无需传该参数, 自动基于项目树检索')
 @click.option('--env', default='dev', help='运行环境, dev=测试环境, test=测试环境, pro=正式环境, 默认: dev')
-@click.option('--log_level', default='INFO',
-              help='日志级别, DEBUG=调试, INFO=信息, WARNING=警告, ERROR=错误, CRITICAL=严重, 默认: INFO')
-@click.option('--label', default='${label}', help='日志标签, 默认: ${label}')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
 def main(project_dir: Optional[str] = None,
-         env: Optional[str] = 'dev',
-         log_level: Optional[str] = 'INFO',
-         label: Optional[str] = '${label}') -> None:
+         env: Optional[str] = 'dev') -> None:
     """${label} cmd."""
-    # 如果是pyinstaller环境, 默认把当前路径设置为执行路径
-    if utils.is_pyinstaller_env():
-        os.environ['PROJECT_DIR'] = os.path.dirname(sys.executable)
     if project_dir:
         os.environ['PROJECT_DIR'] = project_dir
     if env:
         os.environ['ENV'] = env
-    if label:
-        os.environ['LABEL'] = label
 
-    # 启动项目依赖
+    # start ioc
     start()
 
-    # 设置日志文件
-    file_name = cfg().project_name + '.' + os.path.basename(__file__).split('.')[0]
-    setup_loguru(utils.get_log_path('{}.log'.format(file_name)), level=log_level, extra={'project': cfg().project_name, 'label': label})
-    setup_logging(utils.get_log_path('{}.sqlalchemy.log'.format(file_name)), 'sqlalchemy', level=log_level, extra={'project': cfg().project_name, 'label': label})
-    logger.info('运行成功, 当前项目: {}', cfg().project_name)
     ${extra_run}
 
 if __name__ == "__main__":
@@ -91,6 +72,7 @@ if __name__ == "__main__":
                                               command=command,
                                               cmd_main_name=cmd_main_name))
     bin_dir = project_dir + os.sep + 'bin'
+    mkdir(bin_dir)
     bin_file = bin_dir + os.sep + cmd_name + '.sh'
     create_file(bin_file, str_format('''# 获取脚本文件目录
 BIN_DIR=$(dirname "$(readlink -f "$0")")

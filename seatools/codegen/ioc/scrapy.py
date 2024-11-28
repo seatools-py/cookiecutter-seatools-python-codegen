@@ -350,12 +350,9 @@ def generate_scrapy_spider(project_dir: str, package_dir: str,
     spider_class_name = ''.join([n.title() for n in names])
     spider_file = spiders_dir + os.sep + spider_name + '.py'
     create_file(spider_file, str_format("""from typing import Any
-
 import scrapy
+
 from scrapy.http.response import Response
-from ${package_name} import utils
-from ${package_name}.config import cfg
-from seatools.logger.setup import setup_logging
 
 
 class ${class_name}Spider(scrapy.Spider):
@@ -363,19 +360,14 @@ class ${class_name}Spider(scrapy.Spider):
     allowed_domains = ["${domain}"]
     start_urls = ["https://${domain}"]
 
-    def __init__(self, seatools_file_name=None, seatools_log_level='INFO', **kwargs: Any):
-        super().__init__(**kwargs)
-        if seatools_file_name:
-            setup_logging(utils.get_log_path('{}.scrapy.log'.format(seatools_file_name)), 'scrapy', level=seatools_log_level, extra={'project': cfg().project_name, 'label': '${name}'})
-            setup_logging(utils.get_log_path('{}.scrapy.{}.log'.format(seatools_file_name, self.name)), self.name, level=seatools_log_level, extra={'project': cfg().project_name, 'label': '${name}'})
-
     def parse(self, response: Response, **kwargs: Any) -> Any:
         pass
+
 """, name=spider_name, package_name=package_name, class_name=spider_class_name, domain=domain), override=override)
     # 生成完爬虫程序再生成cmd入口
     generate_cmd(project_dir, package_dir, override=override,
                  command=spider_name,
                  extra_import="from scrapy.cmdline import execute\n",
-                 extra_run=str_format("execute(['scrapy', 'crawl', '${name}', '-a', 'seatools_file_name={}'.format(file_name), '-a', 'seatools_log_level={}'.format(log_level)])", name=spider_name),
+                 extra_run=str_format("execute(['scrapy', 'crawl', '${name}'])\n", name=spider_name),
                  docker=docker,
                  docker_compose=docker_compose)
