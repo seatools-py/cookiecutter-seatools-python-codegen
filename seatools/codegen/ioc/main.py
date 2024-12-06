@@ -1,9 +1,12 @@
 import os
+from os.path import dirname
+
 import click
 from loguru import logger
 from typing import Optional
 
 from seatools.codegen.ioc import generate_app
+from .common import extract_names
 from .cmd import generate_cmd
 from .django import generate_django
 from .fastapi import generate_fastapi
@@ -26,6 +29,12 @@ def _extract_project_package_dir(project_dir, package_dir):
     logger.info("项目目录: {}", project_dir)
     logger.info("包目录: {}", package_dir)
     return project_dir, package_dir
+
+
+def _extract_package_app_dir(package_dir, app):
+    if not app:
+        return package_dir
+    return dirname(package_dir) + os.sep + '_'.join(extract_names(app))
 
 
 @click.group()
@@ -60,6 +69,7 @@ def startapp(app: str,
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
 @click.option('--docker_compose', is_flag=True, default=False,
               help='是否生成Dockerfile文件和docker-compose配置, 默认: false')
@@ -68,9 +78,11 @@ def startapp(app: str,
 def fastapi(project_dir: Optional[str] = None,
             package_dir: Optional[str] = None,
             override: Optional[bool] = False,
+            app: Optional[str] = None,
             docker: Optional[bool] = False,
             docker_compose: Optional[bool] = False) -> None:
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     logger.info('开始生成[fastapi]模板代码')
     generate_fastapi(project_dir=project_dir, package_dir=package_dir, override=override,
                      docker=docker,
@@ -81,6 +93,7 @@ def fastapi(project_dir: Optional[str] = None,
 @main.command()
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
@@ -91,9 +104,11 @@ def fastapi(project_dir: Optional[str] = None,
 def flask(project_dir: Optional[str] = None,
           package_dir: Optional[str] = None,
           override: Optional[bool] = False,
+          app: Optional[str] = None,
           docker: Optional[bool] = False,
           docker_compose: Optional[bool] = False):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     logger.info('开始生成[flask]模板代码')
     generate_flask(project_dir=project_dir, package_dir=package_dir, override=override,
                    docker=docker,
@@ -104,6 +119,7 @@ def flask(project_dir: Optional[str] = None,
 @main.command()
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.option('--task_class', '--class', default=None,
@@ -115,6 +131,7 @@ def flask(project_dir: Optional[str] = None,
 def task(project_dir: Optional[str] = None,
          package_dir: Optional[str] = None,
          override: Optional[bool] = False,
+         app: Optional[str] = None,
          task_class: Optional[str] = None,
          task_name: Optional[str] = "默认任务",
          is_async: Optional[bool] = False):
@@ -122,6 +139,7 @@ def task(project_dir: Optional[str] = None,
         logger.error('[--task_class]参数不能为空')
         return
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     generate_task(project_dir=project_dir, package_dir=package_dir,
                   task_class=task_class, task_name=task_name,
                   override=override, is_async=is_async)
@@ -136,14 +154,17 @@ def scrapy():
 @scrapy.command('init')
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
 def scrapy_init(project_dir: Optional[str] = None,
                 package_dir: Optional[str] = None,
-                override: Optional[bool] = False):
+                override: Optional[bool] = False,
+                app: Optional[str] = None):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     generate_scrapy(project_dir=project_dir, package_dir=package_dir, override=override)
 
 
@@ -152,6 +173,7 @@ def scrapy_init(project_dir: Optional[str] = None,
 @click.argument('domain')
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
@@ -163,9 +185,11 @@ def scrapy_genspider(name: str,
                      project_dir: Optional[str] = None,
                      package_dir: Optional[str] = None,
                      override: Optional[bool] = False,
+                     app: Optional[str] = None,
                      docker: Optional[bool] = False,
                      docker_compose: Optional[bool] = False):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     generate_scrapy_spider(project_dir=project_dir, package_dir=package_dir,
                            name=name, domain=domain, override=override,
                            docker=docker,
@@ -175,6 +199,7 @@ def scrapy_genspider(name: str,
 @main.command()
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
@@ -185,9 +210,11 @@ def scrapy_genspider(name: str,
 def django(project_dir: Optional[str] = None,
            package_dir: Optional[str] = None,
            override: Optional[bool] = False,
+           app: Optional[str] = None,
            docker: Optional[bool] = False,
            docker_compose: Optional[bool] = False):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     generate_django(project_dir=project_dir,
                     package_dir=package_dir,
                     override=override,
@@ -199,6 +226,7 @@ def django(project_dir: Optional[str] = None,
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='包目录, 若不传则基于项目目录自动检索')
 @click.option('--name', default=None, help='cmd命令名称, 使用poetry run {name} 执行生成的命令, 必填')
+@click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
@@ -210,10 +238,12 @@ def django(project_dir: Optional[str] = None,
 def cmd(name: str, label: Optional[str] = None,
         project_dir: Optional[str] = None,
         package_dir: Optional[str] = None,
+        app: Optional[str] = None,
         override: Optional[bool] = False,
         docker: Optional[bool] = False,
         docker_compose: Optional[bool] = False):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
+    package_dir = _extract_package_app_dir(package_dir, app)
     if not name:
         logger.error('[--name]参数不能为空')
         return
