@@ -32,7 +32,7 @@ setup(
     install_requires=requirements,
     extras_require={},
     license="MIT license",
-    long_description=readme,
+    long_description='',
     include_package_data=True,
     keywords=['seatools', 'codegen'],
     name='seatools-codegen',
@@ -40,7 +40,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://gitee.com/dragons96/cookiecutter-seatools-python-codegen',
-    version='1.0.7',
+    version='1.0.8',
     zip_safe=False,
     entry_points={
         'console_scripts': [
