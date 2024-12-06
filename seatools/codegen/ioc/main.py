@@ -37,20 +37,17 @@ def main() -> None:
 
 
 @main.command()
+@click.argument('app')
 @click.option('--project_dir', default=None, help='项目目录, 默认从项目内的任意位置执行能够自动检索, 不传也可')
 @click.option('--package_dir', default=None, help='主包目录, 若不传则基于项目目录自动检索')
-@click.option('--app', default=None, help='新应用名称')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
-def startapp(project_dir: Optional[str] = None,
+def startapp(app: str,
+             project_dir: Optional[str] = None,
              package_dir: Optional[str] = None,
-             override: Optional[bool] = False,
-             app: Optional[str] = None) -> None:
-    if not app:
-        logger.error('[--app]参数不能为空')
-        return
+             override: Optional[bool] = False) -> None:
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
     logger.info("开始生成应用[{}]模板代码", app)
     generate_app(project_dir=project_dir, package_dir=package_dir, override=override,
