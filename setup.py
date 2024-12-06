@@ -36,7 +36,7 @@ setup(
     include_package_data=True,
     keywords=['seatools', 'codegen'],
     name='seatools-codegen',
-    packages=find_packages(include=['seatools', 'seatools.*']),
+    packages=find_packages(include=['seatools.codegen', 'seatools.codegen.*']),
     test_suite='tests',
     tests_require=test_requirements,
     url='https://gitee.com/dragons96/cookiecutter-seatools-python-codegen',
