@@ -12,6 +12,7 @@ def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
                  extra_run: Optional[str] = '',
                  docker: Optional[bool] = True,
                  docker_compose: Optional[bool] = True,
+                 app: Optional[str] = None,
                  **kwargs):
     """生成poetry cmd命令
 
@@ -25,6 +26,7 @@ def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
         extra_run: 生成的cmd需要额外执行的逻辑
         docker: 是否生成docker相关文件
         docker_compose: 是否生成docker-compose相关文件
+        app: 指定应用
     """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)

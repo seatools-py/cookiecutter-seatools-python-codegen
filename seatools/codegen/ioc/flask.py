@@ -7,6 +7,7 @@ from .common import mkdir, create_file, add_poetry_script, add_docker_compose_sc
 def generate_flask(project_dir: str, package_dir: str, override: bool = False,
                    docker: Optional[bool] = False,
                    docker_compose: Optional[bool] = False,
+                   app: Optional[str] = None,
                    *args, **kwargs):
     """生成flask模板代码
 
@@ -16,6 +17,7 @@ def generate_flask(project_dir: str, package_dir: str, override: bool = False,
         override: 是否覆盖文件
         docker: 是否生成docker相关文件
         docker_compose: 是否生成docker-compose相关文件
+        app: 指定应用
     """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
@@ -94,9 +96,12 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
     main()
 ''', package_name=package_name), override=override)
+
+        poetry_script_name = '{}_flask'.format(app) if app else 'flask'
+
         add_poetry_script(project_dir, str_format(
-            'flask = "${package_name}.cmd.flask_main:main"',
-            package_name=package_name,
+            '${poetry_script_name} = "${package_name}.cmd.flask_main:main"',
+            package_name=package_name, poetry_script_name=poetry_script_name
         ))
 
         bin_dir = project_dir + os.sep + 'bin'
@@ -150,15 +155,15 @@ fi
 # 执行命令
 echo "开始执行命令"
 # 执行命令 --workers 工作进程数, 正式环境可根据CPU核数设置
-nohup poetry run flask --host 0.0.0.0 --port 8000 --env pro --workers 4 >> /dev/null 2>&1 &
+nohup poetry run ${poetry_script_name} --host 0.0.0.0 --port 8000 --env pro --workers 4 >> /dev/null 2>&1 &
 echo "执行成功"
 echo "退出虚拟环境"
 deactivate
-''', project_name=project_name))
+''', project_name=project_name, poetry_script_name=poetry_script_name), override=override)
 
         if docker or docker_compose:
             dockerfile_path = project_dir + os.sep + 'flask.Dockerfile'
-            create_file(dockerfile_path, '''FROM python:3.9
+            create_file(dockerfile_path, str_format('''FROM python:3.9
 
 WORKDIR /app
 
@@ -177,8 +182,8 @@ RUN poetry install --only main
 
 RUN poetry add flask uvicorn[standard]
 
-CMD ["poetry", "run", "flask", "--env", "pro", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
-''', override=override)
+CMD ["poetry", "run", "${poetry_script_name}", "--env", "pro", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+''', poetry_script_name=poetry_script_name), override=override)
 
         if docker_compose:
             add_docker_compose_script(project_dir, str_format('''  flask:

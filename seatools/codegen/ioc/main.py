@@ -86,7 +86,8 @@ def fastapi(project_dir: Optional[str] = None,
     logger.info('开始生成[fastapi]模板代码')
     generate_fastapi(project_dir=project_dir, package_dir=package_dir, override=override,
                      docker=docker,
-                     docker_compose=docker_compose)
+                     docker_compose=docker_compose,
+                     app=app)
     logger.success('生成[fastapi]模板代码完成')
 
 
@@ -112,7 +113,8 @@ def flask(project_dir: Optional[str] = None,
     logger.info('开始生成[flask]模板代码')
     generate_flask(project_dir=project_dir, package_dir=package_dir, override=override,
                    docker=docker,
-                   docker_compose=docker_compose)
+                   docker_compose=docker_compose,
+                   app=app)
     logger.success('生成[flask]模板代码完成')
 
 
@@ -165,7 +167,8 @@ def scrapy_init(project_dir: Optional[str] = None,
                 app: Optional[str] = None):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
     package_dir = _extract_package_app_dir(package_dir, app)
-    generate_scrapy(project_dir=project_dir, package_dir=package_dir, override=override)
+    generate_scrapy(project_dir=project_dir, package_dir=package_dir, override=override,
+                    app=app)
 
 
 @scrapy.command('genspider')
@@ -193,7 +196,8 @@ def scrapy_genspider(name: str,
     generate_scrapy_spider(project_dir=project_dir, package_dir=package_dir,
                            name=name, domain=domain, override=override,
                            docker=docker,
-                           docker_compose=docker_compose)
+                           docker_compose=docker_compose,
+                           app=app)
 
 
 @main.command()
@@ -219,7 +223,8 @@ def django(project_dir: Optional[str] = None,
                     package_dir=package_dir,
                     override=override,
                     docker=docker,
-                    docker_compose=docker_compose)
+                    docker_compose=docker_compose,
+                    app=app)
 
 
 @main.command()
@@ -253,7 +258,8 @@ def cmd(name: str, label: Optional[str] = None,
                  command=name,
                  label=label,
                  docker=docker,
-                 docker_compose=docker_compose)
+                 docker_compose=docker_compose,
+                 app=app)
 
 
 @main.command()

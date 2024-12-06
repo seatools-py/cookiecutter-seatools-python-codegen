@@ -7,6 +7,7 @@ from .common import mkdir, create_file, add_poetry_script, str_format, add_docke
 def generate_django(project_dir: str, package_dir: str, override: bool = False,
                     docker: Optional[bool] = False,
                     docker_compose: Optional[bool] = False,
+                    app: Optional[str] = None,
                     *args, **kwargs):
     """生成django模板代码
 
@@ -16,6 +17,7 @@ def generate_django(project_dir: str, package_dir: str, override: bool = False,
         override: 是否覆盖文件
         docker: 是否生成docker相关文件
         docker_compose: 是否生成docker-compose相关文件
+        app: 指定应用
     """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
@@ -242,6 +244,9 @@ if __name__ == '__main__':
         cmd_dir = package_dir + os.sep + 'cmd'
         django_cmd_main_py = cmd_dir + os.sep + 'django_main.py'
         django_cmd_py = cmd_dir + os.sep + 'django_cmd.py'
+
+        poetry_script_name = '{}_django'.format(app) if app else 'django'
+
         create_file(django_cmd_py, str_format('''import sys
 
 import click
@@ -256,7 +261,7 @@ def main(args = None) -> None:
     """Django cmd, equals manage.py.
 
     Usage:
-        poetry run django [runserver|migrate|...]
+        poetry run ${poetry_script_name} [runserver|migrate|...]
     """
     # 启动项目依赖
     start()
@@ -268,9 +273,9 @@ def main(args = None) -> None:
 
 if __name__ == "__main__":
     main()
-''', package_name=package_name), override=override)
-        add_poetry_script(project_dir, str_format('django = "${package_name}.cmd.django_cmd:main"',
-                                                  package_name=package_name))
+''', package_name=package_name, poetry_script_name=poetry_script_name), override=override)
+        add_poetry_script(project_dir, str_format('${poetry_script_name} = "${package_name}.cmd.django_cmd:main"',
+                                                  package_name=package_name, poetry_script_name=poetry_script_name))
         create_file(django_cmd_main_py, str_format('''import os
 import click
 import uvicorn
@@ -313,9 +318,12 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
     main()
 ''', package_name=package_name), override=override)
+
+        runserver_poetry_script_name = '{}_django_runserver'.format(app) if app else 'django_runserver'
+
         add_poetry_script(project_dir, str_format(
-            'django_runserver = "${package_name}.cmd.django_main:main"',
-            package_name=package_name,
+            '${runserver_poetry_script_name} = "${package_name}.cmd.django_main:main"',
+            package_name=package_name, runserver_poetry_script_name=runserver_poetry_script_name,
         ))
 
         bin_dir = project_dir + os.sep + 'bin'
@@ -369,11 +377,11 @@ fi
 # 执行命令
 echo "开始执行命令"
 # 执行命令
-nohup poetry run django_runserver --host 0.0.0.0 --port 8000 --env pro --workers 2 >> /dev/null 2>&1 &
+nohup poetry run ${runserver_poetry_script_name} --host 0.0.0.0 --port 8000 --env pro --workers 2 >> /dev/null 2>&1 &
 echo "执行成功"
 echo "退出虚拟环境"
 deactivate
-''', project_name=project_name), override=override)
+''', project_name=project_name, runserver_poetry_script_name=runserver_poetry_script_name), override=override)
 
         if docker or docker_compose:
             dockerfile_file = project_dir + os.sep + 'django.Dockerfile'
@@ -396,8 +404,8 @@ RUN poetry install --only main
 
 RUN poetry add django
 
-CMD poetry run django_runserver --host 0.0.0.0 --port 8000 --env pro --workers 2
-''', project_name=project_name), override=override)
+CMD poetry run ${runserver_poetry_script_name} --host 0.0.0.0 --port 8000 --env pro --workers 2
+''', project_name=project_name, runserver_poetry_script_name=runserver_poetry_script_name), override=override)
 
         if docker_compose:
             add_docker_compose_script(project_dir, str_format('''  django:
