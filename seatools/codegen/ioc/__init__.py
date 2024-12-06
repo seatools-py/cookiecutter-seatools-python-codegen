@@ -5,3 +5,4 @@ from .flask import generate_flask
 from .grpc import generate_grpc
 from .scrapy import generate_scrapy, generate_scrapy_spider
 from .task import generate_task
+from .app import generate_app
