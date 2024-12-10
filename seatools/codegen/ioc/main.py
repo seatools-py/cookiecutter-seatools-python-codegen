@@ -124,10 +124,15 @@ def flask(project_dir: Optional[str] = None,
 @click.option("--app", default=None, help='startapp创建的应用名, 主应用无需填写')
 @click.option('--override', is_flag=True, default=False,
               help='是否覆盖代码, 不建议覆盖, 若要覆盖请确认覆盖代码是否对业务存在影响, 默认false')
-@click.option('--task_class', '--class', default=None,
+@click.option('--task_class', '--class', '--module_name', '--module', default=None,
               help='任务类名, 支持驼峰、下划线名称解析, 生成的文件名下划线分隔, 类名驼峰, 例如: HelloWorld, 生成task模板时必填该参数')
 @click.option('--task_name', '--name', default="默认任务", help='任务名称, 中英文任务描述, 默认值: 默认任务')
 @click.option('--is_async', '--async', is_flag=True, default=False, help='是否创建异步任务, 默认false')
+@click.option('--cmd', is_flag=True, default=False, help='是否生成对应的命令行入口')
+@click.option('--docker', is_flag=True, default=False,
+              help='cmd参数为true时该参数生效, 是否生成Dockerfile文件, 默认: false')
+@click.option('--docker_compose', is_flag=True, default=False,
+              help='cmd参数为true时该参数生效, 是否生成Dockerfile文件和docker-compose配置, 默认: false')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
 def task(project_dir: Optional[str] = None,
@@ -136,7 +141,10 @@ def task(project_dir: Optional[str] = None,
          app: Optional[str] = None,
          task_class: Optional[str] = None,
          task_name: Optional[str] = "默认任务",
-         is_async: Optional[bool] = False):
+         is_async: Optional[bool] = False,
+         cmd: Optional[bool] = False,
+         docker: Optional[bool] = False,
+         docker_compose: Optional[bool] = False) -> None:
     if not task_class:
         logger.error('[--task_class]参数不能为空')
         return
@@ -144,7 +152,8 @@ def task(project_dir: Optional[str] = None,
     package_dir = _extract_package_app_dir(package_dir, app)
     generate_task(project_dir=project_dir, package_dir=package_dir,
                   task_class=task_class, task_name=task_name,
-                  override=override, is_async=is_async)
+                  override=override, is_async=is_async, cmd=cmd,
+                  docker=docker, docker_compose=docker_compose)
 
 
 @main.group()
@@ -237,10 +246,9 @@ def django(project_dir: Optional[str] = None,
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
 @click.option('--docker_compose', is_flag=True, default=False,
               help='是否生成Dockerfile文件和docker-compose配置, 默认: false')
-@click.option('--label', default=None, help='日志label, 不填默认为命令名称')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
-def cmd(name: str, label: Optional[str] = None,
+def cmd(name: str,
         project_dir: Optional[str] = None,
         package_dir: Optional[str] = None,
         app: Optional[str] = None,
@@ -256,7 +264,6 @@ def cmd(name: str, label: Optional[str] = None,
                  package_dir=package_dir,
                  override=override,
                  command=name,
-                 label=label,
                  docker=docker,
                  docker_compose=docker_compose,
                  app=app)

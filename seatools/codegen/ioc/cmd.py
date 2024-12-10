@@ -7,12 +7,10 @@ from .common import mkdir, create_file, extract_names, add_poetry_script, str_fo
 
 def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
                  command: str = None,
-                 label: Optional[str] = None,
                  extra_import: Optional[str] = '',
                  extra_run: Optional[str] = '',
                  docker: Optional[bool] = True,
                  docker_compose: Optional[bool] = True,
-                 app: Optional[str] = None,
                  **kwargs):
     """生成poetry cmd命令
 
@@ -21,7 +19,6 @@ def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
         package_dir: 包目录
         override: 是否覆盖文件
         command: 命令名称, 生成的cmd命令可使用 poetry run {command} 运行
-        label: 生成的cmd的日志label
         extra_import: 生成的cmd需要额外执行的导入
         extra_run: 生成的cmd需要额外执行的逻辑
         docker: 是否生成docker相关文件
@@ -30,7 +27,6 @@ def generate_cmd(project_dir: str, package_dir: str, override: bool = False,
     """
     project_name = unwrapper_dir_name(project_dir)
     package_name = unwrapper_dir_name(package_dir)
-    label = label or command
     cmd_dir = package_dir + os.sep + 'cmd'
     cmd_init_py = cmd_dir + os.sep + '__init__.py'
     mkdir(cmd_dir)
@@ -55,7 +51,7 @@ ${extra_import}
 @click.help_option('-h', '--help', help='查看命令帮助')
 def main(project_dir: Optional[str] = None,
          env: Optional[str] = 'dev') -> None:
-    """${label} cmd."""
+    """${command} cmd."""
     if project_dir:
         os.environ['PROJECT_DIR'] = project_dir
     if env:
@@ -68,7 +64,7 @@ def main(project_dir: Optional[str] = None,
 
 if __name__ == "__main__":
     main()
-''', package_name=package_name, label=label, extra_import=extra_import, extra_run=extra_run), override=override)
+''', package_name=package_name, command=command, extra_import=extra_import, extra_run=extra_run), override=override)
     add_poetry_script(project_dir, str_format('${command} = "${package_name}.cmd.${cmd_main_name}:main"',
                                               package_name=package_name,
                                               command=command,
