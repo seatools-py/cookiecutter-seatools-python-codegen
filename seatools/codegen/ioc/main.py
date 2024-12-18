@@ -73,6 +73,7 @@ def startapp(app: str,
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
 @click.option('--docker_compose', is_flag=True, default=False,
               help='是否生成Dockerfile文件和docker-compose配置, 默认: false')
+@click.option('--starter', is_flag=True, default=False, help='是否生成基于starter的代码')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
 def fastapi(project_dir: Optional[str] = None,
@@ -80,14 +81,16 @@ def fastapi(project_dir: Optional[str] = None,
             override: Optional[bool] = False,
             app: Optional[str] = None,
             docker: Optional[bool] = False,
-            docker_compose: Optional[bool] = False) -> None:
+            docker_compose: Optional[bool] = False,
+            starter: Optional[bool] = False) -> None:
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
     package_dir = _extract_package_app_dir(package_dir, app)
     logger.info('开始生成[fastapi]模板代码')
     generate_fastapi(project_dir=project_dir, package_dir=package_dir, override=override,
                      docker=docker,
                      docker_compose=docker_compose,
-                     app=app)
+                     app=app,
+                     starter=starter)
     logger.success('生成[fastapi]模板代码完成')
 
 
@@ -100,6 +103,7 @@ def fastapi(project_dir: Optional[str] = None,
 @click.option('--docker', is_flag=True, default=False, help='是否生成Dockerfile文件, 默认: false')
 @click.option('--docker_compose', is_flag=True, default=False,
               help='是否生成Dockerfile文件和docker-compose配置, 默认: false')
+@click.option('--starter', is_flag=True, default=False, help='是否生成基于starter的代码')
 @click.version_option(version="1.0.0", help='查看命令版本')
 @click.help_option('-h', '--help', help='查看命令帮助')
 def flask(project_dir: Optional[str] = None,
@@ -107,14 +111,16 @@ def flask(project_dir: Optional[str] = None,
           override: Optional[bool] = False,
           app: Optional[str] = None,
           docker: Optional[bool] = False,
-          docker_compose: Optional[bool] = False):
+          docker_compose: Optional[bool] = False,
+          starter: Optional[bool] = False):
     project_dir, package_dir = _extract_project_package_dir(project_dir, package_dir)
     package_dir = _extract_package_app_dir(package_dir, app)
     logger.info('开始生成[flask]模板代码')
     generate_flask(project_dir=project_dir, package_dir=package_dir, override=override,
                    docker=docker,
                    docker_compose=docker_compose,
-                   app=app)
+                   app=app,
+                   starter=starter)
     logger.success('生成[flask]模板代码完成')
 
 
